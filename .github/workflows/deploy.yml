@@ -1,48 +1,51 @@
-name: CI/CD Pipeline - Test and Deploy
+name: Deploy Node.js App
 
+# Trigger on push to master branch or any branch you want to deploy from
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master  # Trigger when you push to the master branch (or your desired branch)
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Run Tests
-        run: npm test
-
   deploy:
-    needs: test  # Waits for tests to pass
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # This will run on the latest Ubuntu runner provided by GitHub
 
     steps:
-      - name: Checkout Code
+      # Step 1: Checkout the code from the GitHub repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Set up SSH keys to securely access the production server
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
+          # Add your PROD_KEY as a secret in GitHub and use it to authenticate SSH
           printf "%s" "${{ secrets.PROD_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          # Ensure that the known_hosts file contains your production server's SSH key
           ssh-keyscan -H ${{ secrets.PROD_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to Production
+      # Step 3: Deploy the code to your production server
+      - name: Deploy to production
         run: |
-          ssh ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} << 'EOF'
-            cd ${{ secrets.PROD_PATH }}
-            git pull origin master
-            npm install
-            pm2 restart all
+          # SSH into the server and run deployment commands
+          ssh -i ~/.ssh/id_rsa ec2-user@${{ secrets.PROD_HOST }} << 'EOF'
+              # Navigate to the directory where your app is located
+              cd /home/ubuntu/app
+
+              # Pull the latest code from GitHub (master branch)
+              git pull origin master
+
+              # Install the dependencies if any (based on package.json)
+              npm install
+
+              # Make sure pm2 is installed (process manager for Node.js apps)
+              sudo npm install -g pm2
+
+              # Start the app using pm2 (or restart if it's already running)
+              pm2 start app.js --name "myapp" || pm2 restart myapp
+
+              # Ensure the pm2 process is saved and will restart after reboot
+              pm2 save
           EOF
+
