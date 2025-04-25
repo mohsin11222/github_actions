@@ -1,9 +1,9 @@
 {
-  "name": "my-test-app",
+  "name": "myapp",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --passWithNoTests"
   },
   "keywords": [],
   "author": "",
@@ -12,7 +12,7 @@
   "devDependencies": {
     "jest": "^29.7.0"
   },
-"scripts": {
-  "test": "jest --passWithNoTests"
-}
+  "dependencies": {
+    "express": "^5.1.0"
+  }
 }
